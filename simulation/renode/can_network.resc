@@ -1,0 +1,25 @@
+# STM32F446RE CAN network simulation
+
+# 1. Create the virtual CAN network
+emulation CreateCANHub "canHub"
+
+# 2. Create a virtual STM32 machine
+mach create "mcu"
+
+# 3. Load the STM32F446 platform definition
+machine LoadPlatformDescription $ORIGIN/stm32f446.repl
+
+# 4. Load compiled firmware
+sysbus LoadELF $ORIGIN../../build/f446-debug/nucleo_hal.elf
+
+# 5. Connect the STM32 CAN1 peripheral
+connector Connect sysbus.can1 canHub
+
+# 6. Create a bridge to Linux SocketCAN
+machine CreateSocketCANBridge "socketcan" "vcan0"
+
+# 7. Attach the bridge to the CAN network
+connector Connect socketcan canHub
+
+# 8. Open UART debugging console
+showAnalyzer sysbus.usart2
