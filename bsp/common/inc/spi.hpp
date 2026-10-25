@@ -1,8 +1,9 @@
 #ifndef PLATFORM_INC_SPI_HPP
 #define PLATFORM_INC_SPI_HPP
 
+#include "mcu.hpp"
 #include "dma.hpp"
-#include "stm32l4xx.h"
+#include BSP_DEVICE_HEADER
 
 #include <atomic>
 #include <cstddef>

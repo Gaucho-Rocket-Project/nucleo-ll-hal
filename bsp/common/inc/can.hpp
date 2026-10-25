@@ -2,7 +2,8 @@
 #ifndef PLATFORM_INC_CAN_HPP
 #define PLATFORM_INC_CAN_HPP
 
-#include "stm32l4xx_hal_can.h"
+#include "mcu.hpp"
+#include BSP_HAL_CAN_HEADER
 
 #include <array>
 #include <cstdint>

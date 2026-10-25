@@ -11,7 +11,7 @@ target_include_directories(appl_sensors PUBLIC
 )
 
 target_link_libraries(appl_sensors PUBLIC
-    platform
+    bsp_common
 )
 
 target_compile_features(appl_sensors PUBLIC

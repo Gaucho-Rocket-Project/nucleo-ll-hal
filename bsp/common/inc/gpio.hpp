@@ -1,9 +1,10 @@
 #ifndef PLATFORM_INC_GPIO_HPP
 #define PLATFORM_INC_GPIO_HPP
 
+#include "mcu.hpp"
 #include "digital_input.hpp"
 #include "digital_output.hpp"
-#include "stm32l4xx.h"
+#include BSP_DEVICE_HEADER
 #include <cstdint>
 
 /**

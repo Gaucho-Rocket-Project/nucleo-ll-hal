@@ -1,23 +1,31 @@
 {
-  "version": 6,
+  "version": 3,
   "configurePresets": [
     {
-      "name": "Debug",
-      "displayName": "NUCLEO-L476RG Debug",
+      "name": "l476-debug",
       "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/Debug",
+      "binaryDir": "${sourceDir}/build/l476-debug",
       "toolchainFile": "${sourceDir}/cmake/arm-gcc.cmake",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "BOARD": "NUCLEO_L476RG",
         "FIRMWARE_TEST": ""
       }
     },
     {
-      "name": "HardwareTest",
-      "displayName": "NUCLEO-L476RG hardware test",
-      "inherits": "Debug",
-      "binaryDir": "${sourceDir}/build/HardwareTest",
+      "name": "f446-debug",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/f446-debug",
+      "toolchainFile": "${sourceDir}/cmake/arm-gcc.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "BOARD": "NUCLEO_F446RE"
+      }
+    },
+    {
+      "name": "l476-hardware-test",
+      "inherits": "l476-debug",
+      "binaryDir": "${sourceDir}/build/l476-hardware-test",
       "cacheVariables": {
         "FIRMWARE_TEST": "uart"
       }
@@ -25,12 +33,16 @@
   ],
   "buildPresets": [
     {
-      "name": "Debug",
-      "configurePreset": "Debug"
+      "name": "l476-debug",
+      "configurePreset": "l476-debug"
     },
     {
-      "name": "HardwareTest",
-      "configurePreset": "HardwareTest"
+      "name": "f446-debug",
+      "configurePreset": "f446-debug"
+    },
+    {
+      "name": "l476-hardware-test",
+      "configurePreset": "l476-hardware-test"
     }
   ]
 }

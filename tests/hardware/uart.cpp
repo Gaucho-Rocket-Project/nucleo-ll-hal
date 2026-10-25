@@ -1,9 +1,9 @@
-#include "nucleo_l476rg.hpp"
+#include "board.hpp"
 #include "system_clock.hpp"
 
 // Observe one complete line per second on the ST-LINK virtual COM port.
 int main() {
-    namespace board = platform::nucleo_l476rg;
+    namespace board = platform::board;
     board::initialize();
 
     while (true) {

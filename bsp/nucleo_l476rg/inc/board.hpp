@@ -1,5 +1,11 @@
-#ifndef PLATFORM_INC_NUCLEO_L476RG_HPP
-#define PLATFORM_INC_NUCLEO_L476RG_HPP
+#ifndef BSP_NUCLEO_L476RG_BOARD_HPP
+#define BSP_NUCLEO_L476RG_BOARD_HPP
+
+#include "mcu.hpp"
+
+#if !defined(BSP_BOARD_NUCLEO_L476RG)
+#error "This board implementation requires BSP_BOARD_NUCLEO_L476RG"
+#endif
 
 #include "digital_input.hpp"
 #include "digital_output.hpp"
@@ -8,10 +14,10 @@
 #include "spi.hpp"
 #include "can.hpp"
 #include "uart.hpp"
-#include "stm32l4xx.h"
+#include BSP_DEVICE_HEADER
 #include <cstdint>
 
-namespace platform::nucleo_l476rg {
+namespace platform::board {
 
 /**
  * @brief Initializes the NUCLEO-L476RG platform.
@@ -135,6 +141,6 @@ void handle_console_transmit_dma_error() noexcept;
 
 } // namespace detail
 
-} // namespace platform::nucleo_l476rg
+} // namespace platform::board
 
-#endif // PLATFORM_INC_NUCLEO_L476RG_HPP
+#endif // BSP_NUCLEO_L476RG_BOARD_HPP

@@ -16,8 +16,8 @@ Run all commands from the repository root.
 Configure the Debug build:
 
 ```bash
-cmake --preset Debug
-cmake --build --preset Debug
+cmake --preset l476-debug
+cmake --build --preset l476-debug
 ```
 
 Flash the NUCLEO-L476RG:
@@ -25,35 +25,62 @@ Flash the NUCLEO-L476RG:
 ```bash
 STM32_Programmer_CLI \
     -c port=SWD \
-    -w build/Debug/nucleo_hal.elf \
+    -w build/l476-debug/nucleo_hal.elf \
     -v \
     -rst
 ```
+## Board and MCU selection
+
+The l476-debug and l476-hardware-test presets select `BOARD=NUCLEO_L476RG`. To select
+it explicitly, configure with `cmake --preset l476-debug -DBOARD=NUCLEO_L476RG`.
+Unknown board names are rejected during configuration. The f446-debug preset
+reports an error until F446 board and MCU support is implemented.
+
+- `bsp/common/` contains peripheral drivers and shared clock utilities.
+- `bsp/nucleo_l476rg/` contains the board API, device instances, clock setup,
+  interrupt routing, and build configuration in `target.cmake`.
+- `mcal/stm32l4/` contains unmodified CubeMX-generated sources and ST drivers.
+
+Applications include `board.hpp` and use `platform::board`; the selected board's
+include directory supplies that header. Sensor drivers link only to `bsp_common`.
+CMake propagates `BSP_BOARD_NUCLEO_L476RG`, `BSP_MCU_STM32L476XX`,
+`BSP_MCU_FAMILY_STM32L4`, and ST's `STM32L476xx` definition to dependent targets.
+`bsp/common/inc/mcu.hpp` maps those MCU definitions to HAL/LL header macros;
+for example, SPI includes `BSP_LL_DMA_HEADER` and `BSP_LL_SPI_HEADER`.
+
+To add another board, add its BSP directory with the same board API and its
+own target configuration, then register it in the `cmake/boards.cmake` board selection.
+The target configuration selects its MCAL directory, startup file, linker
+script, architecture flags, and compile definitions. For another MCU family,
+add its header mapping and adapt common drivers where its peripheral APIs
+differ. Only the NUCLEO-L476RG is currently implemented. Interrupt handlers are
+linked directly into the executable so they override the startup's weak aliases.
+
 ## Hardware test firmware
 
 Each file in `tests/hardware/` is a standalone firmware entry point with its own
 `int main()`. Select one with `FIRMWARE_TEST`, using the filename without `.cpp`.
-The selected test replaces all `appl/src/` sources and shares the platform,
+The selected test replaces all `appl/src/` sources and shares the BSP,
 MCAL, interrupt handlers, and sensor library with the application.
 
 Build the UART polling smoke test:
 
 ```bash
-cmake --preset HardwareTest -DFIRMWARE_TEST=uart
-cmake --build --preset HardwareTest
+cmake --preset l476-hardware-test -DFIRMWARE_TEST=uart
+cmake --build --preset l476-hardware-test
 ```
 
 Build the UART DMA smoke test:
 
 ```bash
-cmake --preset HardwareTest -DFIRMWARE_TEST=uart_dma
-cmake --build --preset HardwareTest
+cmake --preset l476-hardware-test -DFIRMWARE_TEST=uart_dma
+cmake --build --preset l476-hardware-test
 ```
 
 Flash the selected test:
 
 ```bash
-STM32_Programmer_CLI -c port=SWD -w build/HardwareTest/nucleo_hal.elf -v -rst
+STM32_Programmer_CLI -c port=SWD -w build/l476-hardware-test/nucleo_hal.elf -v -rst
 ```
 
 Open the ST-LINK virtual COM port at **115200 baud, 8 data bits, no parity,
@@ -64,24 +91,22 @@ can leave it waiting indefinitely with the LED stopped. These are manual board
 smoke tests; compiling them does not verify physical UART output or DMA behavior.
 
 To add a test, create `tests/hardware/my_feature.cpp` with its own `main()`, call
-`platform::nucleo_l476rg::initialize()`, and configure with
+`platform::board::initialize()`, and configure with
 `-DFIRMWARE_TEST=my_feature`. No CMake source-list edit is needed. Unknown names
 fail during configuration. Reconfigure whenever you change the selected test;
-`cmake --build` uses the last configured selection. The HardwareTest preset
+`cmake --build` uses the last configured selection. The l476-hardware-test preset
 defaults to `uart`, so pass the desired name each time you configure it.
 
 Build the actual application again:
 
 ```bash
-cmake --preset Debug
-cmake --build --preset Debug
+cmake --preset l476-debug
+cmake --build --preset l476-debug
 ```
 
-The Debug preset explicitly clears `FIRMWARE_TEST`. Application artifacts stay
-in `build/Debug/`; test artifacts stay in `build/HardwareTest/`. The existing
-VS Code launch configuration still builds and launches the Debug application.
-To debug a hardware test, use `build/HardwareTest/nucleo_hal.elf` and a build task
-that runs `cmake --build --preset HardwareTest`.
+The l476-debug preset explicitly clears `FIRMWARE_TEST`. Application artifacts stay
+in `build/l476-debug/`; test artifacts stay in `build/l476-hardware-test/`. To debug a hardware test, use `build/l476-hardware-test/nucleo_hal.elf` and a build task
+that runs `cmake --build --preset l476-hardware-test`.
 
 ## SPI hardware-in-the-loop test (ESP32-S3 slave)
 
@@ -108,7 +133,7 @@ additionally requests a minimum 5 us CS hold after the transfer through
 `SpiDevice`'s `chip_select_hold_us` constructor argument. The delay uses the
 platform's Cortex-M4 cycle counter; interrupts can extend it. Other devices
 default to zero added hold time.
-All GPIO and peripheral setup lives in `platform`; the test uses
+All GPIO and peripheral setup lives in `bsp`; the test uses
 `board::spi1()`, `board::pins::pa4`, and `SpiDevice` for transactions, sharing
 the application's SPI1 configuration. Disconnect the ADXL345 and other SPI
 devices for this test because PA4 is also the application's ADXL345 chip select.
@@ -117,9 +142,9 @@ Configure the ESP32 slave for Mode 3 before running this test.
 Build and flash from the repository root:
 
 ```bash
-cmake --preset HardwareTest -DFIRMWARE_TEST=spi_test
-cmake --build --preset HardwareTest
-STM32_Programmer_CLI -c port=SWD -w build/HardwareTest/nucleo_hal.elf -v -rst
+cmake --preset l476-hardware-test -DFIRMWARE_TEST=spi_test
+cmake --build --preset l476-hardware-test
+STM32_Programmer_CLI -c port=SWD -w build/l476-hardware-test/nucleo_hal.elf -v -rst
 ```
 
 1. Open the STM32 ST-LINK virtual COM port at **115200 baud, 8N1, no flow control**.

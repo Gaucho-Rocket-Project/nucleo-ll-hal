@@ -1,4 +1,5 @@
-#include "nucleo_l476rg.hpp"
+#include "mcu.hpp"
+#include "board.hpp"
 
 #include "dma.hpp"
 #include "gpio.hpp"
@@ -10,16 +11,16 @@ extern "C" {
 #include "dma.h"
 #include "gpio.h"
 #include "spi.h"
-#include "stm32l4xx_hal.h"
-#include "system_stm32l4xx.h"
+#include BSP_HAL_HEADER
+#include BSP_SYSTEM_HEADER
 #include "usart.h"
 #include "can.h"
 }
 
-#include "stm32l4xx_ll_bus.h"
-#include "stm32l4xx_ll_exti.h"
-#include "stm32l4xx_ll_gpio.h"
-#include "stm32l4xx_ll_spi.h"
+#include BSP_LL_BUS_HEADER
+#include BSP_LL_EXTI_HEADER
+#include BSP_LL_GPIO_HEADER
+#include BSP_LL_SPI_HEADER
 
 #include <atomic>
 
@@ -76,13 +77,13 @@ void cube_mx_init() noexcept {
 
 } // namespace
 
-namespace platform::nucleo_l476rg::pins {
+namespace platform::board::pins {
 
 const GpioPin pa4{GPIOA, LL_GPIO_PIN_4};
 
-} // namespace platform::nucleo_l476rg::pins
+} // namespace platform::board::pins
 
-namespace platform::nucleo_l476rg {
+namespace platform::board {
 
 void initialize() noexcept {
     // CubeMX-generated clock initialization.
@@ -151,4 +152,4 @@ void handle_user_button_exti() noexcept {
 
 } // namespace detail
 
-} // namespace platform::nucleo_l476rg
+} // namespace platform::board

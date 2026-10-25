@@ -1,7 +1,8 @@
+#include "mcu.hpp"
 #include "uart.hpp"
 
-#include "stm32l4xx_ll_dma.h"
-#include "stm32l4xx_ll_usart.h"
+#include BSP_LL_DMA_HEADER
+#include BSP_LL_USART_HEADER
 
 namespace platform {
 

@@ -1,6 +1,7 @@
+#include "mcu.hpp"
 #include "gpio.hpp"
 
-#include "stm32l4xx_ll_gpio.h"
+#include BSP_LL_GPIO_HEADER
 
 namespace platform {
 

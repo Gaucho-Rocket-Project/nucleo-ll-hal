@@ -14,9 +14,10 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(MCAL_DIR
-    "${CMAKE_CURRENT_SOURCE_DIR}/mcal"
-)
+# Resolve the preset's BOARD to the BSP directory and its MCU configuration.
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/boards.cmake")
+include("${BSP_BOARD_DIR}/target.cmake")
+message(STATUS "BSP board: ${BSP_BOARD}; MCU: ${BSP_MCU}")
 
 # ---------------------------------------------------------------------------
 # Automatically collect CubeMX-generated sources.
@@ -32,58 +33,7 @@ list(FILTER MCAL_CORE_SOURCES EXCLUDE REGEX
 )
 
 file(GLOB_RECURSE MCAL_DRIVER_SOURCES CONFIGURE_DEPENDS
-    "${MCAL_DIR}/Drivers/STM32L4xx_HAL_Driver/Src/*.c"
-)
-
-# ---------------------------------------------------------------------------
-# STM32 configuration used by the firmware and platform library.
-# ---------------------------------------------------------------------------
-
-add_library(mcal_config INTERFACE)
-
-target_include_directories(mcal_config INTERFACE
-    "${MCAL_DIR}/Core/Inc"
-)
-
-# Treat third-party ST headers as system headers so warnings inside CMSIS
-# and the LL headers do not overwhelm your C++ build output.
-target_include_directories(mcal_config SYSTEM INTERFACE
-    "${MCAL_DIR}/Drivers/CMSIS/Include"
-    "${MCAL_DIR}/Drivers/CMSIS/Device/ST/STM32L4xx/Include"
-    "${MCAL_DIR}/Drivers/STM32L4xx_HAL_Driver/Inc"
-)
-
-target_compile_definitions(mcal_config INTERFACE
-    STM32L476xx
-    USE_FULL_LL_DRIVER
-
-    HSE_VALUE=8000000
-    HSI_VALUE=16000000
-    LSE_VALUE=32768
-    LSI_VALUE=32000
-    MSI_VALUE=4000000
-
-    HSE_STARTUP_TIMEOUT=100
-    LSE_STARTUP_TIMEOUT=5000
-
-    EXTERNALSAI1_CLOCK_VALUE=2097000
-    EXTERNALSAI2_CLOCK_VALUE=2097000
-
-    VDD_VALUE=3300
-    PREFETCH_ENABLE=1
-    INSTRUCTION_CACHE_ENABLE=1
-    DATA_CACHE_ENABLE=1
-)
-
-target_compile_options(mcal_config INTERFACE
-    -mcpu=cortex-m4
-    -mthumb
-    -mfpu=fpv4-sp-d16
-    -mfloat-abi=hard
-
-    -ffunction-sections
-    -fdata-sections
-    -fstack-usage
+    "${MCAL_DRIVER_DIR}/Src/*.c"
 )
 
 # ---------------------------------------------------------------------------
@@ -93,19 +43,19 @@ target_compile_options(mcal_config INTERFACE
 add_executable(${PROJECT_NAME}
     ${MCAL_CORE_SOURCES}
     ${MCAL_DRIVER_SOURCES}
-    "${MCAL_DIR}/startup_stm32l476xx.s"
+    "${MCAL_STARTUP_SOURCE}"
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
     SUFFIX ".elf"
 )
 
-add_subdirectory(platform)
+add_subdirectory(bsp)
 add_subdirectory(appl)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
     mcal_config
-    platform
+    bsp_board
     m
 )
 
@@ -130,12 +80,8 @@ target_compile_options(${PROJECT_NAME} PRIVATE
 # Keep the generated mcal linker script unchanged and patch a build copy.
 # ---------------------------------------------------------------------------
 
-set(GENERATED_LINKER_SCRIPT
-    "${MCAL_DIR}/STM32L476xx_FLASH.ld"
-)
-
 set(COMPATIBLE_LINKER_SCRIPT
-    "${CMAKE_BINARY_DIR}/STM32L476xx_FLASH.ld"
+    "${CMAKE_BINARY_DIR}/firmware_FLASH.ld"
 )
 
 # Reconfigure automatically when CubeMX regenerates the linker script.
@@ -175,10 +121,7 @@ set_property(
 )
 
 target_link_options(${PROJECT_NAME} PRIVATE
-    -mcpu=cortex-m4
-    -mthumb
-    -mfpu=fpv4-sp-d16
-    -mfloat-abi=hard
+    ${MCU_ARCH_OPTIONS}
 
     --specs=nano.specs
 

@@ -1,10 +1,10 @@
-#include "nucleo_l476rg.hpp"
+#include "board.hpp"
 #include "system_clock.hpp"
 
 // Exercises DMA transmission and its completion interrupt repeatedly.
 // A missing completion interrupt leaves the LED stopped inside write_line_dma.
 int main() {
-    namespace board = platform::nucleo_l476rg;
+    namespace board = platform::board;
     board::initialize();
     auto& console = board::console();
     console.write_line("Starting UART DMA smoke test");

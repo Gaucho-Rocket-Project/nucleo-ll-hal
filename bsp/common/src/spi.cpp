@@ -1,7 +1,8 @@
+#include "mcu.hpp"
 #include "spi.hpp"
 
-#include "stm32l4xx_ll_dma.h"
-#include "stm32l4xx_ll_spi.h"
+#include BSP_LL_DMA_HEADER
+#include BSP_LL_SPI_HEADER
 
 #include <cstdint>
 

@@ -1,5 +1,5 @@
 #include "adxl345.hpp"
-#include "nucleo_l476rg.hpp"
+#include "board.hpp"
 #include "system_clock.hpp"
 
 #include <cstddef>
@@ -11,7 +11,7 @@
  * @return This function does not return.
  */
 int main() {
-    namespace board = platform::nucleo_l476rg;
+    namespace board = platform::board;
     namespace sensors = application::sensors;
 
     board::initialize();

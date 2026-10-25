@@ -1,4 +1,4 @@
-#include "nucleo_l476rg.hpp"
+#include "board.hpp"
 #include "spi_device.hpp"
 #include "system_clock.hpp"
 
@@ -7,7 +7,7 @@
 
 namespace {
 
-namespace board = platform::nucleo_l476rg;
+namespace board = platform::board;
 using Frame = std::array<std::uint8_t, 4>;
 constexpr std::uint32_t transaction_gap_ms{10U};
 constexpr std::uint32_t chip_select_hold_us{5U};
