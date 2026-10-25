@@ -1,0 +1,216 @@
+cmake_minimum_required(VERSION 3.22)
+
+project(nucleo_hal
+    LANGUAGES C CXX ASM
+)
+
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_C_EXTENSIONS ON)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+set(MCAL_DIR
+    "${CMAKE_CURRENT_SOURCE_DIR}/mcal"
+)
+
+# ---------------------------------------------------------------------------
+# Automatically collect CubeMX-generated sources.
+# ---------------------------------------------------------------------------
+
+file(GLOB_RECURSE MCAL_CORE_SOURCES CONFIGURE_DEPENDS
+    "${MCAL_DIR}/Core/Src/*.c"
+)
+
+# appl/src/main.cpp is the real application entry point.
+list(FILTER MCAL_CORE_SOURCES EXCLUDE REGEX
+    "[/\\\\]main\\.c$"
+)
+
+file(GLOB_RECURSE MCAL_DRIVER_SOURCES CONFIGURE_DEPENDS
+    "${MCAL_DIR}/Drivers/STM32L4xx_HAL_Driver/Src/*.c"
+)
+
+# ---------------------------------------------------------------------------
+# STM32 configuration used by the firmware and platform library.
+# ---------------------------------------------------------------------------
+
+add_library(mcal_config INTERFACE)
+
+target_include_directories(mcal_config INTERFACE
+    "${MCAL_DIR}/Core/Inc"
+)
+
+# Treat third-party ST headers as system headers so warnings inside CMSIS
+# and the LL headers do not overwhelm your C++ build output.
+target_include_directories(mcal_config SYSTEM INTERFACE
+    "${MCAL_DIR}/Drivers/CMSIS/Include"
+    "${MCAL_DIR}/Drivers/CMSIS/Device/ST/STM32L4xx/Include"
+    "${MCAL_DIR}/Drivers/STM32L4xx_HAL_Driver/Inc"
+)
+
+target_compile_definitions(mcal_config INTERFACE
+    STM32L476xx
+    USE_FULL_LL_DRIVER
+
+    HSE_VALUE=8000000
+    HSI_VALUE=16000000
+    LSE_VALUE=32768
+    LSI_VALUE=32000
+    MSI_VALUE=4000000
+
+    HSE_STARTUP_TIMEOUT=100
+    LSE_STARTUP_TIMEOUT=5000
+
+    EXTERNALSAI1_CLOCK_VALUE=2097000
+    EXTERNALSAI2_CLOCK_VALUE=2097000
+
+    VDD_VALUE=3300
+    PREFETCH_ENABLE=1
+    INSTRUCTION_CACHE_ENABLE=1
+    DATA_CACHE_ENABLE=1
+)
+
+target_compile_options(mcal_config INTERFACE
+    -mcpu=cortex-m4
+    -mthumb
+    -mfpu=fpv4-sp-d16
+    -mfloat-abi=hard
+
+    -ffunction-sections
+    -fdata-sections
+    -fstack-usage
+)
+
+# ---------------------------------------------------------------------------
+# Final firmware executable.
+# ---------------------------------------------------------------------------
+
+add_executable(${PROJECT_NAME}
+    ${MCAL_CORE_SOURCES}
+    ${MCAL_DRIVER_SOURCES}
+    "${MCAL_DIR}/startup_stm32l476xx.s"
+)
+
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    SUFFIX ".elf"
+)
+
+add_subdirectory(platform)
+add_subdirectory(appl)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE
+    mcal_config
+    platform
+    m
+)
+
+target_compile_options(${PROJECT_NAME} PRIVATE
+    -Wall
+
+    $<$<COMPILE_LANGUAGE:CXX>:-Wextra>
+    $<$<COMPILE_LANGUAGE:CXX>:-Wpedantic>
+    $<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions>
+    $<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>
+    $<$<COMPILE_LANGUAGE:CXX>:-fno-threadsafe-statics>
+)
+
+# ---------------------------------------------------------------------------
+# Create a linker-script copy compatible with older GNU Arm linkers.
+#
+# New CubeMX versions may generate output sections using:
+#
+#     .ARM.extab (READONLY) :
+#
+# Older GNU ld versions do not recognize the READONLY section attribute.
+# Keep the generated mcal linker script unchanged and patch a build copy.
+# ---------------------------------------------------------------------------
+
+set(GENERATED_LINKER_SCRIPT
+    "${MCAL_DIR}/STM32L476xx_FLASH.ld"
+)
+
+set(COMPATIBLE_LINKER_SCRIPT
+    "${CMAKE_BINARY_DIR}/STM32L476xx_FLASH.ld"
+)
+
+# Reconfigure automatically when CubeMX regenerates the linker script.
+set_property(
+    DIRECTORY
+    APPEND
+    PROPERTY CMAKE_CONFIGURE_DEPENDS
+    "${GENERATED_LINKER_SCRIPT}"
+)
+
+file(
+    READ
+    "${GENERATED_LINKER_SCRIPT}"
+    LINKER_SCRIPT_CONTENT
+)
+
+# The FLASH memory region already makes these sections read-only.
+string(
+    REPLACE
+    "(READONLY)"
+    ""
+    LINKER_SCRIPT_CONTENT
+    "${LINKER_SCRIPT_CONTENT}"
+)
+
+file(
+    WRITE
+    "${COMPATIBLE_LINKER_SCRIPT}"
+    "${LINKER_SCRIPT_CONTENT}"
+)
+
+set_property(
+    TARGET ${PROJECT_NAME}
+    APPEND
+    PROPERTY LINK_DEPENDS
+    "${GENERATED_LINKER_SCRIPT}"
+)
+
+target_link_options(${PROJECT_NAME} PRIVATE
+    -mcpu=cortex-m4
+    -mthumb
+    -mfpu=fpv4-sp-d16
+    -mfloat-abi=hard
+
+    --specs=nano.specs
+
+    -T${COMPATIBLE_LINKER_SCRIPT}
+
+    -Wl,-Map=${CMAKE_BINARY_DIR}/${PROJECT_NAME}.map
+    -Wl,--gc-sections
+    -Wl,--print-memory-usage
+)
+
+# Generate .hex and .bin files after linking.
+if(CMAKE_OBJCOPY)
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_OBJCOPY}
+            -O ihex
+            $<TARGET_FILE:${PROJECT_NAME}>
+            "${CMAKE_BINARY_DIR}/${PROJECT_NAME}.hex"
+
+        COMMAND ${CMAKE_OBJCOPY}
+            -O binary
+            $<TARGET_FILE:${PROJECT_NAME}>
+            "${CMAKE_BINARY_DIR}/${PROJECT_NAME}.bin"
+
+        COMMENT "Generating HEX and BIN files"
+    )
+endif()
+
+if(CMAKE_SIZE)
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_SIZE}
+            $<TARGET_FILE:${PROJECT_NAME}>
+
+        COMMENT "Firmware size"
+    )
+endif()

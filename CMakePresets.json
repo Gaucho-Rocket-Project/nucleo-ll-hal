@@ -1,0 +1,36 @@
+{
+  "version": 6,
+  "configurePresets": [
+    {
+      "name": "Debug",
+      "displayName": "NUCLEO-L476RG Debug",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/Debug",
+      "toolchainFile": "${sourceDir}/cmake/arm-gcc.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "FIRMWARE_TEST": ""
+      }
+    },
+    {
+      "name": "HardwareTest",
+      "displayName": "NUCLEO-L476RG hardware test",
+      "inherits": "Debug",
+      "binaryDir": "${sourceDir}/build/HardwareTest",
+      "cacheVariables": {
+        "FIRMWARE_TEST": "uart"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "Debug",
+      "configurePreset": "Debug"
+    },
+    {
+      "name": "HardwareTest",
+      "configurePreset": "HardwareTest"
+    }
+  ]
+}
