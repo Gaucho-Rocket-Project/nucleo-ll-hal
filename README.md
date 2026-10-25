@@ -93,26 +93,26 @@ Power both boards independently over USB and connect these 3.3 V signals:
 
 | Signal | STM32L476RG | ESP32-S3 |
 | --- | --- | --- |
-| SCK | PA5 | GPIO4 |
-| MOSI | PA7 | GPIO5 |
-| MISO | PA6 | GPIO6 |
-| CS | PB6 | GPIO7 |
+| SCK | PB3 | GPIO4 |
+| MOSI | PB5 | GPIO5 |
+| MISO | PB4 | GPIO6 |
+| CS | PA4 | GPIO7 |
 | Ground | GND | GND |
 
-The test selects the platform's `Spi1Profile::arduino_mode0` board configuration
-through `board::initialize()`. The platform configures SPI1 for full-duplex,
-8-bit, MSB-first, Mode 0 at 625 kHz
-(80 MHz peripheral clock divided by 128). PB6 is an active-low GPIO output.
-One CS assertion covers all four bytes; the driver waits for SPI to become idle
-before releasing CS on success. The ESP32 test additionally requests a minimum
-5 us CS hold after the transfer through `SpiDevice`'s `chip_select_hold_us`
-constructor argument. The delay uses the platform's Cortex-M4 cycle counter;
-interrupts can extend it. Other devices default to zero added hold time.
-All GPIO and peripheral setup lives in
-`platform`; the test uses `board::spi1()`, `board::pins::pb6`, and `SpiDevice`
-for transactions. The default board initialization retains the application's
-CubeMX settings. PA5 is also the Nucleo status LED pin, so this test does not use the
-status LED for reporting. Disconnect other SPI devices for this test.
+The test uses the standard SPI1 configuration through `board::initialize()`:
+full-duplex, 8-bit, MSB-first, Mode 3 at 2.5 MHz (80 MHz peripheral clock
+divided by 32), with PB3/PB4/PB5 for SCK/MISO/MOSI. PA4 is the active-low
+GPIO chip-select output. One CS assertion covers all four bytes; the driver
+waits for SPI to become idle before releasing CS on success. The ESP32 test
+additionally requests a minimum 5 us CS hold after the transfer through
+`SpiDevice`'s `chip_select_hold_us` constructor argument. The delay uses the
+platform's Cortex-M4 cycle counter; interrupts can extend it. Other devices
+default to zero added hold time.
+All GPIO and peripheral setup lives in `platform`; the test uses
+`board::spi1()`, `board::pins::pa4`, and `SpiDevice` for transactions, sharing
+the application's SPI1 configuration. Disconnect the ADXL345 and other SPI
+devices for this test because PA4 is also the application's ADXL345 chip select.
+Configure the ESP32 slave for Mode 3 before running this test.
 
 Build and flash from the repository root:
 
@@ -125,7 +125,7 @@ STM32_Programmer_CLI -c port=SWD -w build/HardwareTest/nucleo_hal.elf -v -rst
 1. Open the STM32 ST-LINK virtual COM port at **115200 baud, 8N1, no flow control**.
    Reset the STM32 if you missed the startup message.
 2. Reset the ESP32 and wait until its SPI slave has queued the initial response
-   `5A 10 00 00` and is ready to receive. It must use Mode 0 and four-byte transfers.
+   `5A 10 00 00` and is ready to receive. It must use Mode 3 and four-byte transfers.
 3. Press the STM32 USER button once to start the test.
 4. Read the TX, RX, EXPECT, and OK lines. A successful run ends with
    `PASS: READY and all five command acknowledgments verified`.
@@ -151,9 +151,9 @@ gap, colors change too quickly for reliable visual inspection; increase
 also adds time between transactions.
 
 A mismatch prints the actual and expected frames and stops the run. Check slave
-readiness, the previous-transaction response rule, Mode 0, common ground, and
+readiness, the previous-transaction response rule, Mode 3, common ground, and
 MOSI/MISO wiring. With a logic analyzer, expect CS low across exactly 32 clocks
-per request and SCK idle low. PASS validates the protocol responses; verify LED
+per request and SCK idle high. PASS validates the protocol responses; verify LED
 behavior on the ESP32 separately. Building alone does not validate hardware.
 
 For last-bit errors, the 5 us CS hold is a timing mitigation to verify on the

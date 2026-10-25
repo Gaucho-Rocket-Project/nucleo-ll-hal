@@ -6,19 +6,12 @@
 #include "dma.hpp"
 #include "gpio.hpp"
 #include "spi.hpp"
-#include "stm32l4xx.h"
+#include "can.hpp"
 #include "uart.hpp"
+#include "stm32l4xx.h"
 #include <cstdint>
 
 namespace platform::nucleo_l476rg {
-
-/**
- * @brief Selects the board's SPI1 wiring and bus configuration.
- */
-enum class Spi1Profile : std::uint8_t {
-    generated,    ///< CubeMX settings used by the main application.
-    arduino_mode0 ///< PA5/6/7, PB6 CS, Mode 0, 8-bit MSB-first, 625 kHz.
-};
 
 /**
  * @brief Initializes the NUCLEO-L476RG platform.
@@ -26,12 +19,9 @@ enum class Spi1Profile : std::uint8_t {
  * Configures the system clock, SysTick time base, GPIO peripherals, status LED,
  * and user-button interrupt.
  *
- * @param spi1_profile SPI1 board configuration. The Arduino profile also
- * configures PB6 as an inactive-high chip-select output and reserves PA5 for
- * SCK, making the status LED unavailable.
  * @note Call this function once before accessing any board devices.
  */
-void initialize(Spi1Profile spi1_profile = Spi1Profile::generated) noexcept;
+void initialize() noexcept;
 
 // -------------------------------------------------------------------------
 // On-board LED (PA5)
@@ -54,7 +44,7 @@ DigitalOutput& status_led() noexcept;
 DigitalInput& user_button() noexcept;
 
 // -------------------------------------------------------------------------
-// SPI Interface (FIX)
+// SPI1 Interface (PB3 SCK, PB4 MISO, PB5 MOSI)
 
 /**
  * @brief Gets the SPI1 master peripheral.
@@ -63,12 +53,15 @@ DigitalInput& user_button() noexcept;
  */
 Spi& spi1() noexcept;
 
+// -------------------------------------------------------------------------
+// CAN Interface (PB8, PB9)
+
 /**
- * @brief Gets the chip-select output associated with SPI1.
+ * @brief Gets the CAN1 master peripheral.
  *
- * @return Active-low chip-select output.
+ * @return CAN1 master interface.
  */
-DigitalOutput& spi1_chip_select() noexcept;
+Can& can1() noexcept;
 
 // -------------------------------------------------------------------------
 // USART2 Interface (PA2, PA3)
@@ -92,14 +85,9 @@ Uart& console() noexcept;
 namespace pins {
 
 /**
- * @brief PA4 GPIO pin used as the ADXL345 chip-select signal.
+ * @brief PA4 GPIO pin used as the SPI1 device chip-select signal.
  */
 extern const GpioPin pa4;
-
-/**
- * @brief PB6 chip-select pin, configured by the arduino_mode0 SPI1 profile.
- */
-extern const GpioPin pb6;
 
 } // namespace pins
 

@@ -57,12 +57,12 @@ bool run_test(platform::SpiDevice& slave) {
 } // namespace
 
 int main() {
-    board::initialize(board::Spi1Profile::arduino_mode0);
-    platform::SpiDevice slave{board::spi1(), board::pins::pb6,
+    board::initialize();
+    platform::SpiDevice slave{board::spi1(), board::pins::pa4,
                                ActiveLevel::low, chip_select_hold_us};
     slave.initialize();
     auto& console = board::console();
-    console.write_line("SPI HIL test: Mode 0, 625 kHz, PA5/PA6/PA7, CS PB6");
+    console.write_line("SPI HIL test: SPI1 Mode 3, 2.5 MHz, PB3/PB4/PB5, CS PA4");
     console.write_line("CS hold timing enabled (default 5 us after SPI idle)");
 
     while (true) {

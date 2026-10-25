@@ -10,15 +10,16 @@ extern "C" {
 #include "dma.h"
 #include "gpio.h"
 #include "spi.h"
+#include "stm32l4xx_hal.h"
 #include "system_stm32l4xx.h"
 #include "usart.h"
+#include "can.h"
 }
 
 #include "stm32l4xx_ll_bus.h"
 #include "stm32l4xx_ll_exti.h"
 #include "stm32l4xx_ll_gpio.h"
 #include "stm32l4xx_ll_spi.h"
-#include "stm32l4xx_ll_utils.h"
 
 #include <atomic>
 
@@ -36,53 +37,20 @@ platform::Spi spi1_device{SPI1,
 platform::Uart console_device{USART2,
                               platform::DmaChannel{DMA1, LL_DMA_CHANNEL_7}};
 
+platform::Can can1_device{hcan1};
+
 std::atomic_bool user_button_press_pending{false};
-
-void configure_arduino_spi1() noexcept {
-    LL_SPI_Disable(SPI1);
-    LL_AHB2_GRP1_EnableClock(LL_AHB2_GRP1_PERIPH_GPIOA |
-                             LL_AHB2_GRP1_PERIPH_GPIOB);
-
-    // Release the application's SPI pin mapping before selecting PA5/6/7.
-    LL_GPIO_SetPinMode(GPIOB, LL_GPIO_PIN_3, LL_GPIO_MODE_ANALOG);
-    LL_GPIO_SetPinMode(GPIOB, LL_GPIO_PIN_4, LL_GPIO_MODE_ANALOG);
-    LL_GPIO_SetPinMode(GPIOB, LL_GPIO_PIN_5, LL_GPIO_MODE_ANALOG);
-
-    // Preload CS high before enabling its output driver.
-    LL_GPIO_SetOutputPin(GPIOB, LL_GPIO_PIN_6);
-    LL_GPIO_InitTypeDef pins{};
-    pins.Pin = LL_GPIO_PIN_6;
-    pins.Mode = LL_GPIO_MODE_OUTPUT;
-    pins.Speed = LL_GPIO_SPEED_FREQ_HIGH;
-    pins.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
-    pins.Pull = LL_GPIO_PULL_NO;
-    LL_GPIO_Init(GPIOB, &pins);
-
-    pins.Pin = LL_GPIO_PIN_5 | LL_GPIO_PIN_6 | LL_GPIO_PIN_7;
-    pins.Mode = LL_GPIO_MODE_ALTERNATE;
-    pins.Alternate = LL_GPIO_AF_5;
-    LL_GPIO_Init(GPIOA, &pins);
-
-    LL_SPI_InitTypeDef spi{};
-    spi.TransferDirection = LL_SPI_FULL_DUPLEX;
-    spi.Mode = LL_SPI_MODE_MASTER;
-    spi.DataWidth = LL_SPI_DATAWIDTH_8BIT;
-    spi.ClockPolarity = LL_SPI_POLARITY_LOW;
-    spi.ClockPhase = LL_SPI_PHASE_1EDGE;
-    spi.NSS = LL_SPI_NSS_SOFT;
-    spi.BaudRate = LL_SPI_BAUDRATEPRESCALER_DIV128; // 80 MHz / 128 = 625 kHz.
-    spi.BitOrder = LL_SPI_MSB_FIRST;
-    spi.CRCCalculation = LL_SPI_CRCCALCULATION_DISABLE;
-    spi.CRCPoly = 7U;
-    LL_SPI_Init(SPI1, &spi);
-    LL_SPI_SetStandard(SPI1, LL_SPI_PROTOCOL_MOTOROLA);
-    LL_SPI_DisableNSSPulseMgt(SPI1);
-    LL_SPI_SetRxFIFOThreshold(SPI1, LL_SPI_RX_FIFO_TH_QUARTER);
-    LL_SPI_Enable(SPI1);
-}
 
 void cube_mx_init() noexcept {
     platform::clock::configure();
+
+    // LL clock setup starts SysTick without its interrupt. Enable the HAL
+    // 1 ms time base before CAN initialization can wait on HAL_GetTick().
+    // The generated SysTick_Handler already calls HAL_IncTick() once.
+    SystemCoreClockUpdate();
+    if (HAL_InitTick(TICK_INT_PRIORITY) != HAL_OK) {
+        Error_Handler();
+    }
 
     /*
      * Required before configuring SYSCFG->EXTICR registers.
@@ -94,9 +62,7 @@ void cube_mx_init() noexcept {
     MX_USART2_UART_Init();
     MX_SPI1_Init();
     LL_SPI_Enable(SPI1);
-
-    SystemCoreClockUpdate();
-    LL_Init1msTick(SystemCoreClock);
+    MX_CAN1_Init();
 
     /*
      * Remove stale pending state before enabling the interrupt.
@@ -113,22 +79,17 @@ void cube_mx_init() noexcept {
 namespace platform::nucleo_l476rg::pins {
 
 const GpioPin pa4{GPIOA, LL_GPIO_PIN_4};
-const GpioPin pb6{GPIOB, LL_GPIO_PIN_6};
 
 } // namespace platform::nucleo_l476rg::pins
 
 namespace platform::nucleo_l476rg {
 
-void initialize(Spi1Profile spi1_profile) noexcept {
+void initialize() noexcept {
     // CubeMX-generated clock initialization.
     cube_mx_init();
 
     // Start with the LED turned off.
     status_led_device.clear();
-
-    if (spi1_profile == Spi1Profile::arduino_mode0) {
-        configure_arduino_spi1();
-    }
 }
 
 DigitalOutput& status_led() noexcept {
@@ -145,6 +106,10 @@ Uart& console() noexcept {
 
 Spi& spi1() noexcept {
     return spi1_device;
+}
+
+Can& can1() noexcept {
+    return can1_device;
 }
 
 bool take_user_button_press() noexcept {
