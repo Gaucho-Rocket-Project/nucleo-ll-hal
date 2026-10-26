@@ -1,18 +1,18 @@
-# STM32F446RE initial Renode platform adaptation
-#
-# Based on Renode's generic STM32F4 platform.
-# This is a starting point, not a fully validated F446 model.
+// STM32F446RE initial Renode platform adaptation
+//
+// Based on Renode's generic STM32F4 platform.
+// This is a starting point, not a fully validated F446 model.
 
 using "platforms/cpus/stm32f4.repl"
 
-# STM32F446RE: 512 KB Flash
+// STM32F446RE: 512 KB Flash
 flash:
     size: 0x80000
 
-# STM32F446RE: 128 KB SRAM
+// STM32F446RE: 128 KB SRAM
 sram:
     size: 0x20000
 
-# Match the initial 84 MHz firmware clock configuration
+// Match the initial 84 MHz firmware clock configuration
 nvic:
     systickFrequency: 84000000

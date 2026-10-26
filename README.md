@@ -227,3 +227,33 @@ For comparison, set `chip_select_hold_us` in `spi_test.cpp` to `0U` and rebuild.
 If the mismatch persists, compare the ESP32's received request and prepared
 response to distinguish MOSI corruption from a MISO/response issue. A logic
 analyzer can verify the final clock edge precedes CS rising by at least 5 us.
+
+## Renode CAN loopback simulation
+
+From the repository root, build and launch the F446 loopback test:
+
+```bash
+cmake --preset f446-hardware-test -DFIRMWARE_TEST=can_test
+cmake --build --preset f446-hardware-test
+renode --console --disable-gui simulation/renode/can_loopback.resc -e start
+```
+
+In another terminal, run `tail -F /tmp/nucleo-can.log`. Expected output is
+`CAN1 classic loopback test` followed by repeated `PASS: 0x123 AB CD` lines.
+Use `pause`, `start`, and `quit` in the Renode Monitor to control execution.
+The script's reset macro reloads the ELF and reapplies the workaround on
+`machine Reset`. Quit an existing simulation before launching a fresh instance.
+
+The Renode 1.17 STMCAN model does not acknowledge initialization when both
+INRQ and SLEEP are set. The checked-in HAL requests initialization before
+clearing sleep, so the unadjusted model causes `HAL_CAN_ERROR_TIMEOUT` and
+enters `Error_Handler()` before UART logging starts. The script wakes the
+simulated CAN controller before firmware runs (MCR = 0x00010000). It does
+not change the firmware or fabricate received frames. UART logging uses
+immediate flushing so output is visible while the simulation is running.
+
+This smoke test exercises the firmware's polling CAN loopback against the
+Renode model; it does not validate physical bus signaling, DMA, or all F446
+peripherals. Generic F4 model warnings about SYSCFG, RCC, and DMA can still
+appear. The separate `can_network.resc` is a Linux SocketCAN experiment,
+not this native loopback test.

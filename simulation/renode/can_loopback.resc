@@ -1,0 +1,22 @@
+# Native macOS/Linux CAN loopback smoke test; no SocketCAN bridge is needed.
+# Build first: cmake --preset f446-hardware-test -DFIRMWARE_TEST=can_test
+#              cmake --build --preset f446-hardware-test
+
+mach create "mcu"
+machine LoadPlatformDescription $ORIGIN/stm32f446.repl
+
+$bin=$ORIGIN/../../build/f446-hardware-test/nucleo_hal.elf
+
+macro reset
+"""
+    sysbus LoadELF $bin
+    # Renode 1.17 STMCAN does not assert INAK with INRQ and SLEEP both set.
+    # HAL_CAN_Init requests INRQ before clearing SLEEP, causing a timeout.
+    # Wake only the simulated controller first; preserve the reset DBF bit.
+    # This changes its initial state, not firmware, acknowledgments or frames.
+    sysbus.can1 WriteDoubleWord 0 0x00010000
+"""
+runMacro $reset
+
+# Flush each write so tail sees output immediately, before Renode exits.
+sysbus.usart2 CreateFileBackend @/tmp/nucleo-can.log true
