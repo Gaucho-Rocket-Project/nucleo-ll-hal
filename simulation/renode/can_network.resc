@@ -10,6 +10,10 @@ machine LoadPlatformDescription $ORIGIN/stm32f446.repl
 # Load the compiled F446 firmware
 sysbus LoadELF @/home/vmuser/projects/nucleo-ll-hal/build/f446-debug/nucleo_hal.elf
 
+# Workaround for Renode STMCAN initialization issue.
+# Clear CAN1 SLEEP before STM32 HAL requests initialization.
+sysbus WriteDoubleWord 0x40006400 0x00010000
+
 # Connect CAN1 to the virtual bus
 connector Connect sysbus.can1 canHub
 
