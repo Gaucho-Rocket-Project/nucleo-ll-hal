@@ -6,7 +6,7 @@
 
 #include <cstdint>
 
-namespace platform {
+namespace bsp {
 
 SpiStatus Spi::transfer(const std::uint8_t* transmit, std::uint8_t* receive, std::size_t size) noexcept {
     if (size == 0U) return SpiStatus::ok;
@@ -39,8 +39,8 @@ SpiStatus Spi::transfer_dma(const std::uint8_t* transmit, std::uint8_t* receive,
     receive_complete_.store(false);
     dma_error_.store(false);
     // DMA channel configuration registers must only be changed while the channels are disabled.
-    LL_DMA_DisableChannel(transmit_dma_.controller, transmit_dma_.channel);
-    LL_DMA_DisableChannel(receive_dma_.controller, receive_dma_.channel);
+    transmit_dma_.disable();
+    receive_dma_.disable();
     /*
      * Configure the SPI data register as the peripheral address for both DMA channels.
      * TX DMA writes to the data register.
@@ -74,14 +74,15 @@ SpiStatus Spi::transfer_dma(const std::uint8_t* transmit, std::uint8_t* receive,
     // TX and RX perform to the same number of transfers
     LL_DMA_SetDataLength(transmit_dma_.controller, transmit_dma_.channel, static_cast<std::uint32_t>(size));
     LL_DMA_SetDataLength(receive_dma_.controller, receive_dma_.channel, static_cast<std::uint32_t>(size));
+    // Remove completion/error flags from an earlier transfer before restart.
+    transmit_dma_.clear_flags();
+    receive_dma_.clear_flags();
     // Enable transfer-complete and transfer-error interrupts.
-    LL_DMA_EnableIT_TC(transmit_dma_.controller, transmit_dma_.channel);
-    LL_DMA_EnableIT_TE(transmit_dma_.controller, transmit_dma_.channel);
-    LL_DMA_EnableIT_TC(receive_dma_.controller, receive_dma_.channel);
-    LL_DMA_EnableIT_TE(receive_dma_.controller, receive_dma_.channel);
+    transmit_dma_.enable_interrupts();
+    receive_dma_.enable_interrupts();
     // Start both DMA channels before allowing SPI to issue requests.
-    LL_DMA_EnableChannel(receive_dma_.controller, receive_dma_.channel);
-    LL_DMA_EnableChannel(transmit_dma_.controller, transmit_dma_.channel);
+    receive_dma_.enable();
+    transmit_dma_.enable();
     // Allow SPI to generate hardware DMA requests.
     LL_SPI_EnableDMAReq_RX(instance_);
     LL_SPI_EnableDMAReq_TX(instance_);
@@ -94,8 +95,8 @@ SpiStatus Spi::transfer_dma(const std::uint8_t* transmit, std::uint8_t* receive,
     // Prevent the SPI peripheral from generating additional DMA requests.
     LL_SPI_DisableDMAReq_TX(instance_);
     LL_SPI_DisableDMAReq_RX(instance_);
-    LL_DMA_DisableChannel(transmit_dma_.controller, transmit_dma_.channel);
-    LL_DMA_DisableChannel(receive_dma_.controller, receive_dma_.channel);
+    transmit_dma_.disable();
+    receive_dma_.disable();
 
     if (dma_error_.load()) {
         dma_active_.store(false);
@@ -153,4 +154,4 @@ void Spi::handle_dma_error() noexcept {
     dma_error_.store(true);
 }
 
-} // namespace platform
+} // namespace bsp

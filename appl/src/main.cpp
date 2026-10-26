@@ -11,7 +11,7 @@
  * @return This function does not return.
  */
 int main() {
-    namespace board = platform::board;
+    namespace board = bsp::board;
     namespace sensors = application::sensors;
 
     board::initialize();
@@ -57,6 +57,6 @@ int main() {
         /*
          * Read and print approximately ten samples per second.
          */
-        platform::clock::delay_ms(100U);
+        bsp::clock::delay_ms(100U);
     }
 }

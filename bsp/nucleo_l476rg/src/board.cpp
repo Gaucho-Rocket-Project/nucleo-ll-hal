@@ -26,24 +26,24 @@ extern "C" {
 
 namespace {
 
-platform::GpioOutput status_led_device{GPIOA,
+bsp::GpioOutput status_led_device{GPIOA,
                                        LL_GPIO_PIN_5,
                                        ActiveLevel::high};
-platform::GpioInput user_button_device{GPIOC,
+bsp::GpioInput user_button_device{GPIOC,
                                        LL_GPIO_PIN_13,
                                        ActiveLevel::low};
-platform::Spi spi1_device{SPI1,
-                          platform::DmaChannel{DMA1, LL_DMA_CHANNEL_3},
-                          platform::DmaChannel{DMA1, LL_DMA_CHANNEL_2}};
-platform::Uart console_device{USART2,
-                              platform::DmaChannel{DMA1, LL_DMA_CHANNEL_7}};
+bsp::Spi spi1_device{SPI1,
+                          bsp::DmaChannel{DMA1, LL_DMA_CHANNEL_3},
+                          bsp::DmaChannel{DMA1, LL_DMA_CHANNEL_2}};
+bsp::Uart console_device{USART2,
+                              bsp::DmaChannel{DMA1, LL_DMA_CHANNEL_7}};
 
-platform::Can can1_device{hcan1};
+bsp::Can can1_device{hcan1};
 
 std::atomic_bool user_button_press_pending{false};
 
 void cube_mx_init() noexcept {
-    platform::clock::configure();
+    bsp::clock::configure();
 
     // LL clock setup starts SysTick without its interrupt. Enable the HAL
     // 1 ms time base before CAN initialization can wait on HAL_GetTick().
@@ -77,13 +77,13 @@ void cube_mx_init() noexcept {
 
 } // namespace
 
-namespace platform::board::pins {
+namespace bsp::board::pins {
 
 const GpioPin pa4{GPIOA, LL_GPIO_PIN_4};
 
-} // namespace platform::board::pins
+} // namespace bsp::board::pins
 
-namespace platform::board {
+namespace bsp::board {
 
 void initialize() noexcept {
     // CubeMX-generated clock initialization.
@@ -152,4 +152,4 @@ void handle_user_button_exti() noexcept {
 
 } // namespace detail
 
-} // namespace platform::board
+} // namespace bsp::board

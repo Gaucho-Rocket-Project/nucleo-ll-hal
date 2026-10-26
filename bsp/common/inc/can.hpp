@@ -8,7 +8,7 @@
 #include <array>
 #include <cstdint>
 
-namespace platform {
+namespace bsp {
 
 /**
  * @brief Represents a standard Classic CAN data frame.
@@ -108,6 +108,6 @@ class Can final {
     bool started_{false};
 };
 
-} // namespace platform
+} // namespace bsp
 
 #endif // PLATFORM_INC_CAN_HPP

@@ -17,7 +17,7 @@
 #include BSP_DEVICE_HEADER
 #include <cstdint>
 
-namespace platform::board {
+namespace bsp::board {
 
 /**
  * @brief Initializes the NUCLEO-L476RG platform.
@@ -141,6 +141,6 @@ void handle_console_transmit_dma_error() noexcept;
 
 } // namespace detail
 
-} // namespace platform::board
+} // namespace bsp::board
 
 #endif // BSP_NUCLEO_L476RG_BOARD_HPP

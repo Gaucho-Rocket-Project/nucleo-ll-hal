@@ -8,12 +8,14 @@ extern "C" {
 #include BSP_LL_RCC_HEADER
 #include BSP_LL_UTILS_HEADER
 
-namespace platform::clock {
+namespace bsp::clock {
 
 Source source() noexcept {
     switch (LL_RCC_GetSysClkSource()) {
+#if defined(BSP_MCU_FAMILY_STM32L4)
     case LL_RCC_SYS_CLKSOURCE_STATUS_MSI:
         return Source::msi;
+#endif
 
     case LL_RCC_SYS_CLKSOURCE_STATUS_HSI:
         return Source::hsi16;
@@ -56,4 +58,4 @@ void delay_us(std::uint32_t microseconds) noexcept {
     }
 }
 
-} // namespace platform::clock
+} // namespace bsp::clock

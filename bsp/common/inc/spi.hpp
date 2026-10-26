@@ -9,7 +9,7 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace platform {
+namespace bsp {
 
 /**
  * @brief Result of an SPI transfer.
@@ -106,6 +106,6 @@ class Spi final {
     static constexpr std::uint32_t timeout_iterations{100000U};
 };
 
-} // namespace platform
+} // namespace bsp
 
 #endif // PLATFORM_INC_SPI_HPP

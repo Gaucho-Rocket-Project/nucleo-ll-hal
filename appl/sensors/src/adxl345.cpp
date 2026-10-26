@@ -2,7 +2,7 @@
 
 namespace application::sensors {
 
-Adxl345::Adxl345(platform::Spi& spi, platform::GpioPin chip_select_pin) noexcept
+Adxl345::Adxl345(bsp::Spi& spi, bsp::GpioPin chip_select_pin) noexcept
     : device_{spi, chip_select_pin, ::ActiveLevel::low} {}
 
 SensorStatus Adxl345::initialize() noexcept {
@@ -70,8 +70,8 @@ SensorStatus Adxl345::write_register(Register register_address, std::uint8_t val
     return convert_status(device_.transfer(transmission, nullptr, sizeof(transmission)));
 }
 
-SensorStatus Adxl345::convert_status(platform::SpiStatus status) noexcept {
-    if (status == platform::SpiStatus::ok) return SensorStatus::ok;
+SensorStatus Adxl345::convert_status(bsp::SpiStatus status) noexcept {
+    if (status == bsp::SpiStatus::ok) return SensorStatus::ok;
     return SensorStatus::communication_error;
 }
 

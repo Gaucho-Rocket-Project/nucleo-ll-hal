@@ -7,7 +7,7 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace platform {
+namespace bsp {
 
 /**
  * @brief Represents one device connected to a shared SPI bus.
@@ -111,6 +111,6 @@ class SpiDevice final {
     std::uint32_t chip_select_hold_us_;
 };
 
-} // namespace platform
+} // namespace bsp
 
 #endif // PLATFORM_INC_SPI_DEVICE_HPP

@@ -10,7 +10,7 @@ extern "C" {
 #include BSP_LL_SYSTEM_HEADER
 #include BSP_LL_UTILS_HEADER
 
-namespace platform::clock {
+namespace bsp::clock {
 
 void configure() noexcept {
     /*
@@ -48,4 +48,4 @@ void configure() noexcept {
     LL_SetSystemCoreClock(80000000);
 }
 
-} // namespace platform::clock
+} // namespace bsp::clock

@@ -3,7 +3,7 @@
 
 #include BSP_LL_GPIO_HEADER
 
-namespace platform {
+namespace bsp {
 
 void GpioOutput::set() noexcept {
     if (active_level_ == ::ActiveLevel::high) {
@@ -47,4 +47,4 @@ bool GpioInput::read() const noexcept {
     return !pin_is_high;
 }
 
-} // namespace platform
+} // namespace bsp

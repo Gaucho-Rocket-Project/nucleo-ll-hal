@@ -4,7 +4,7 @@
 #include BSP_LL_DMA_HEADER
 #include BSP_LL_USART_HEADER
 
-namespace platform {
+namespace bsp {
 
 void Uart::write_byte(std::uint8_t byte) noexcept {
     while (LL_USART_IsActiveFlag_TXE(instance_) == 0U) {}
@@ -35,7 +35,7 @@ UartStatus Uart::start_write_dma(const std::uint8_t* data, std::size_t size) noe
     transmit_error_ = false;
 
     // disable channel before DMA configuration
-    LL_DMA_DisableChannel(transmit_dma_.controller, transmit_dma_.channel);
+    transmit_dma_.disable();
     // RAM source address
     LL_DMA_SetMemoryAddress(transmit_dma_.controller,
                             transmit_dma_.channel,
@@ -43,18 +43,21 @@ UartStatus Uart::start_write_dma(const std::uint8_t* data, std::size_t size) noe
     // USART2 transmit data register destination.
     LL_DMA_SetPeriphAddress(transmit_dma_.controller,
                             transmit_dma_.channel,
+#if defined(BSP_MCU_FAMILY_STM32F4)
+                            LL_USART_DMA_GetRegAddr(instance_));
+#else
                             LL_USART_DMA_GetRegAddr(instance_, LL_USART_DMA_REG_DATA_TRANSMIT));
+#endif
     // Number of bytes to transfer.
     LL_DMA_SetDataLength(transmit_dma_.controller, transmit_dma_.channel, size);
     // Clear flags left over from an earlier transfer.
-    LL_DMA_ClearFlag_GI7(DMA1);
+    transmit_dma_.clear_flags();
     // Enable DMA completion and error interrupts.
-    LL_DMA_EnableIT_TC(transmit_dma_.controller, transmit_dma_.channel);
-    LL_DMA_EnableIT_TE(transmit_dma_.controller, transmit_dma_.channel);
+    transmit_dma_.enable_interrupts();
     // Allow USART2 to request DMA transfers.
     LL_USART_EnableDMAReq_TX(instance_);
     // Start the transfer.
-    LL_DMA_EnableChannel(transmit_dma_.controller, transmit_dma_.channel);
+    transmit_dma_.enable();
 
     return UartStatus::ok;
 }
@@ -96,17 +99,17 @@ bool Uart::transmitting_dma() const noexcept {
 }
 
 void Uart::handle_transmit_dma_complete() noexcept {
-    LL_DMA_DisableChannel(transmit_dma_.controller, transmit_dma_.channel);
+    transmit_dma_.disable();
     LL_USART_DisableDMAReq_TX(instance_);
     transmit_complete_.store(true);
     transmit_active_.store(false);
 }
 
 void Uart::handle_transmit_dma_error() noexcept {
-    LL_DMA_DisableChannel(transmit_dma_.controller, transmit_dma_.channel);
+    transmit_dma_.disable();
     LL_USART_DisableDMAReq_TX(instance_);
     transmit_error_.store(true);
     transmit_active_.store(false);
 }
 
-} // namespace platform
+} // namespace bsp

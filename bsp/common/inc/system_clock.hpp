@@ -3,7 +3,7 @@
 
 #include <cstdint>
 
-namespace platform::clock {
+namespace bsp::clock {
 
 /**
  * @brief Available system-clock sources.
@@ -58,6 +58,6 @@ void delay_ms(std::uint32_t milliseconds) noexcept;
  */
 void delay_us(std::uint32_t microseconds) noexcept;
 
-} // namespace platform::clock
+} // namespace bsp::clock
 
 #endif // PLATFORM_INC_SYSTE_CLOCK_HPP

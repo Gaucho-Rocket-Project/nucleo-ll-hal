@@ -2,18 +2,18 @@
 
 namespace {
 
-platform::CanStatus map_hal_status(HAL_StatusTypeDef status) noexcept {
+bsp::CanStatus map_hal_status(HAL_StatusTypeDef status) noexcept {
     switch (status) {
-        case HAL_OK:      return platform::CanStatus::ok;
-        case HAL_BUSY:    return platform::CanStatus::busy;
-        case HAL_TIMEOUT: return platform::CanStatus::timeout;
-        default:          return platform::CanStatus::hal_error;
+        case HAL_OK:      return bsp::CanStatus::ok;
+        case HAL_BUSY:    return bsp::CanStatus::busy;
+        case HAL_TIMEOUT: return bsp::CanStatus::timeout;
+        default:          return bsp::CanStatus::hal_error;
     }
 }
 
 } // namespace
 
-namespace platform {
+namespace bsp {
 
 CanStatus Can::initialize() noexcept {
     if (started_) return CanStatus::ok;
@@ -93,4 +93,4 @@ std::uint32_t Can::error_code() const noexcept {
     return HAL_CAN_GetError(handle_);
 }
 
-} // namespace platform
+} // namespace bsp

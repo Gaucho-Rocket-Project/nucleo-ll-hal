@@ -19,13 +19,22 @@
       "toolchainFile": "${sourceDir}/cmake/arm-gcc.cmake",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "BOARD": "NUCLEO_F446RE"
+        "BOARD": "NUCLEO_F446RE",
+        "FIRMWARE_TEST": ""
       }
     },
     {
       "name": "l476-hardware-test",
       "inherits": "l476-debug",
       "binaryDir": "${sourceDir}/build/l476-hardware-test",
+      "cacheVariables": {
+        "FIRMWARE_TEST": "uart"
+      }
+    },
+    {
+      "name": "f446-hardware-test",
+      "inherits": "f446-debug",
+      "binaryDir": "${sourceDir}/build/f446-hardware-test",
       "cacheVariables": {
         "FIRMWARE_TEST": "uart"
       }
@@ -43,6 +52,10 @@
     {
       "name": "l476-hardware-test",
       "configurePreset": "l476-hardware-test"
+    },
+    {
+      "name": "f446-hardware-test",
+      "configurePreset": "f446-hardware-test"
     }
   ]
 }

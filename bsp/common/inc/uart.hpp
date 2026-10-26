@@ -10,7 +10,7 @@
 #include <cstdint>
 #include <string_view>
 
-namespace platform {
+namespace bsp {
 
 /**
  * @brief Describes the result of a UART operation.
@@ -137,6 +137,6 @@ class Uart final {
     std::atomic_bool transmit_error_{false};
 }; // class Uart
 
-} // namespace platform
+} // namespace bsp
 
 #endif // PLATFORM_INC_UART_HPP

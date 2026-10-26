@@ -38,7 +38,7 @@ class Adxl345 final : public Sensor<AccelerationSample> {
      * @param chip_select_pin GPIO pin connected to the sensor's active-low
      * chip-select input.
      */
-    Adxl345(platform::Spi& spi, platform::GpioPin chip_select_pin) noexcept;
+    Adxl345(bsp::Spi& spi, bsp::GpioPin chip_select_pin) noexcept;
 
     // -------------------------------------------------------------------------
     // Public Member Methods
@@ -118,7 +118,7 @@ class Adxl345 final : public Sensor<AccelerationSample> {
      * @param status SPI operation status.
      * @return Corresponding sensor operation status.
      */
-    [[nodiscard]] static SensorStatus convert_status(platform::SpiStatus status) noexcept;
+    [[nodiscard]] static SensorStatus convert_status(bsp::SpiStatus status) noexcept;
 
     /**
      * @brief Combines two register bytes into a signed acceleration value.
@@ -129,7 +129,7 @@ class Adxl345 final : public Sensor<AccelerationSample> {
      */
     [[nodiscard]] static std::int16_t combine_bytes(std::uint8_t low, std::uint8_t high) noexcept;
 
-    platform::SpiDevice device_;
+    bsp::SpiDevice device_;
     bool initialized_{false};
 
     static constexpr std::uint8_t expected_device_id{0xE5U};

@@ -1,7 +1,7 @@
 #ifndef PLATFORM_INC_DIGITAL_INPUT_HPP
 #define PLATFORM_INC_DIGITAL_INPUT_HPP
 
-namespace platform {
+namespace bsp {
 
 /**
  * @brief Interface for reading a digital input.
@@ -27,6 +27,6 @@ class DigitalInput {
     [[nodiscard]] virtual bool read() const noexcept = 0;
 }; // class DigitalInput
 
-} // namespace platform
+} // namespace bsp
 
 #endif

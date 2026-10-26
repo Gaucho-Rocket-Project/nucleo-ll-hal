@@ -7,13 +7,13 @@ namespace {
 // including early returns on errors. No hold is inserted between transfer phases.
 class ChipSelectGuard final {
   public:
-    ChipSelectGuard(platform::GpioOutput& chip_select, std::uint32_t hold_us) noexcept
+    ChipSelectGuard(bsp::GpioOutput& chip_select, std::uint32_t hold_us) noexcept
         : chip_select_{chip_select}, hold_us_{hold_us} {
         chip_select_.set();
     }
 
     ~ChipSelectGuard() {
-        if (hold_us_ != 0U) platform::clock::delay_us(hold_us_);
+        if (hold_us_ != 0U) bsp::clock::delay_us(hold_us_);
         chip_select_.clear();
     }
 
@@ -21,13 +21,13 @@ class ChipSelectGuard final {
     ChipSelectGuard& operator=(const ChipSelectGuard&) = delete;
 
   private:
-    platform::GpioOutput& chip_select_;
+    bsp::GpioOutput& chip_select_;
     std::uint32_t hold_us_;
 };
 
 } // namespace
 
-namespace platform {
+namespace bsp {
 
 SpiDevice::SpiDevice(Spi& spi, GpioPin chip_select_pin, ::ActiveLevel active_level, std::uint32_t chip_select_hold_us) noexcept
     : spi_{spi}, chip_select_{chip_select_pin, active_level}, chip_select_hold_us_{chip_select_hold_us} {}
@@ -66,4 +66,4 @@ SpiStatus SpiDevice::write_then_read_dma(const std::uint8_t* command,
     return spi_.transfer_dma(nullptr, receive, receive_size);
 }
 
-} // namespace platform
+} // namespace bsp

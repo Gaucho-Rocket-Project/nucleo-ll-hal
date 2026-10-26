@@ -15,7 +15,7 @@ enum class ActiveLevel : std::uint8_t {
     high = true
 };
 
-namespace platform {
+namespace bsp {
 
 /**
  * @brief Identifies a physical GPIO pin.
@@ -136,6 +136,6 @@ class GpioInput final : public DigitalInput {
     ActiveLevel active_level_;
 }; // class GpioInput
 
-} // namespace platform
+} // namespace bsp
 
 #endif // PLATFORM_INC_GPIO_HPP

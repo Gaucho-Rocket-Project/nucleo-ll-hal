@@ -1,4 +1,4 @@
-# Nucleo-l476rg Hardware Abstraction Layer (HAL)
+# Nucleo Hardware Abstraction Layer (HAL)
 
 ## Prerequisites
 
@@ -33,18 +33,25 @@ STM32_Programmer_CLI \
 
 The l476-debug and l476-hardware-test presets select `BOARD=NUCLEO_L476RG`. To select
 it explicitly, configure with `cmake --preset l476-debug -DBOARD=NUCLEO_L476RG`.
-Unknown board names are rejected during configuration. The f446-debug preset
-reports an error until F446 board and MCU support is implemented.
+The `f446-debug` and `f446-hardware-test` presets select `BOARD=NUCLEO_F446RE`.
+Unknown board names are rejected during configuration.
+
+```bash
+cmake --preset f446-debug
+cmake --build --preset f446-debug
+```
 
 - `bsp/common/` contains peripheral drivers and shared clock utilities.
-- `bsp/nucleo_l476rg/` contains the board API, device instances, clock setup,
+- `bsp/nucleo_l476rg/` and `bsp/nucleo_f446re/` contain each board's API, device instances, clock setup,
   interrupt routing, and build configuration in `target.cmake`.
-- `mcal/stm32l4/` contains unmodified CubeMX-generated sources and ST drivers.
+- `mcal/stm32l4/` and `mcal/stm32f4/` contain unmodified CubeMX-generated sources and ST drivers.
 
-Applications include `board.hpp` and use `platform::board`; the selected board's
+Applications include `board.hpp` and use `bsp::board`; the selected board's
 include directory supplies that header. Sensor drivers link only to `bsp_common`.
 CMake propagates `BSP_BOARD_NUCLEO_L476RG`, `BSP_MCU_STM32L476XX`,
-`BSP_MCU_FAMILY_STM32L4`, and ST's `STM32L476xx` definition to dependent targets.
+`BSP_MCU_FAMILY_STM32L4`, and ST's `STM32L476xx` definition to dependent targets
+for L476. F446 uses `BSP_BOARD_NUCLEO_F446RE`, `BSP_MCU_STM32F446XX`,
+`BSP_MCU_FAMILY_STM32F4`, and `STM32F446xx`.
 `bsp/common/inc/mcu.hpp` maps those MCU definitions to HAL/LL header macros;
 for example, SPI includes `BSP_LL_DMA_HEADER` and `BSP_LL_SPI_HEADER`.
 
@@ -53,8 +60,32 @@ own target configuration, then register it in the `cmake/boards.cmake` board sel
 The target configuration selects its MCAL directory, startup file, linker
 script, architecture flags, and compile definitions. For another MCU family,
 add its header mapping and adapt common drivers where its peripheral APIs
-differ. Only the NUCLEO-L476RG is currently implemented. Interrupt handlers are
+differ. NUCLEO-L476RG and NUCLEO-F446RE are implemented. Interrupt handlers are
 linked directly into the executable so they override the startup's weak aliases.
+For F446, source-specific compiler definitions rename CubeMX's peripheral IRQ
+stubs, letting BSP handlers own those vectors while retaining generated fault
+and SysTick handlers. No generated files need editing.
+
+| Configuration | NUCLEO-L476RG | NUCLEO-F446RE |
+| --- | --- | --- |
+| Core / APB1 / APB2 | 80 / 80 / 80 MHz | 84 / 42 / 84 MHz |
+| SPI1 SCK / MISO / MOSI | PB3 / PB4 / PB5 | PB3 / PA6 / PA7 |
+| SPI1 chip select | PA4 | PA4 (configured by BSP) |
+| SPI1 mode / clock | Mode 3 / 2.5 MHz | Mode 3 / 2.625 MHz |
+| SPI1 RX / TX DMA | DMA1 channels 2 / 3 | DMA2 streams 0 / 3, channel 3 requests |
+| USART2 TX DMA | DMA1 channel 7 | DMA1 stream 6, channel 4 requests |
+| LED / button | PA5 / PC13 | PA5 / PC13 |
+| CAN1 RX / TX | PB8 / PB9 | PB8 / PB9 |
+
+F446 uses the checked-in CubeMX HSI/PLL clock settings at 84 MHz. Its BSP changes
+SPI1 from CubeMX's Mode 0 to Mode 3 before enabling it to support the existing
+ADXL345 application. Both boards enable the HAL 1 ms tick before CAN initialization
+and retain CubeMX's 500 kbit/s CAN timing. F446 is configured for internal
+loopback; the current L476 generated configuration uses normal bus mode.
+`can_test` expects loopback, so L476 requires a matching CubeMX configuration
+before that test can pass on hardware.
+The common DMA layer handles L4 channels and F4 streams, including waiting for
+F4 stream disable, clearing stale flags, and routing direct-mode/FIFO errors.
 
 ## Hardware test firmware
 
@@ -62,6 +93,10 @@ Each file in `tests/hardware/` is a standalone firmware entry point with its own
 `int main()`. Select one with `FIRMWARE_TEST`, using the filename without `.cpp`.
 The selected test replaces all `appl/src/` sources and shares the BSP,
 MCAL, interrupt handlers, and sensor library with the application.
+
+Use `f446-hardware-test` instead of `l476-hardware-test` for F446, and flash
+`build/f446-hardware-test/nucleo_hal.elf`. Both support `uart`, `uart_dma`,
+`spi_test`, and `can_test`. Builds alone do not validate board behavior.
 
 Build the UART polling smoke test:
 
@@ -91,7 +126,7 @@ can leave it waiting indefinitely with the LED stopped. These are manual board
 smoke tests; compiling them does not verify physical UART output or DMA behavior.
 
 To add a test, create `tests/hardware/my_feature.cpp` with its own `main()`, call
-`platform::board::initialize()`, and configure with
+`bsp::board::initialize()`, and configure with
 `-DFIRMWARE_TEST=my_feature`. No CMake source-list edit is needed. Unknown names
 fail during configuration. Reconfigure whenever you change the selected test;
 `cmake --build` uses the last configured selection. The l476-hardware-test preset
@@ -116,18 +151,19 @@ the four-byte protocol described below; this test supplies the STM32 side.
 
 Power both boards independently over USB and connect these 3.3 V signals:
 
-| Signal | STM32L476RG | ESP32-S3 |
-| --- | --- | --- |
-| SCK | PB3 | GPIO4 |
-| MOSI | PB5 | GPIO5 |
-| MISO | PB4 | GPIO6 |
-| CS | PA4 | GPIO7 |
-| Ground | GND | GND |
+| Signal | STM32L476RG | STM32F446RE | ESP32-S3 |
+| --- | --- | --- | --- |
+| SCK | PB3 | PB3 | GPIO4 |
+| MOSI | PB5 | PA7 | GPIO5 |
+| MISO | PB4 | PA6 | GPIO6 |
+| CS | PA4 | PA4 | GPIO7 |
+| Ground | GND | GND | GND |
 
 The test uses the standard SPI1 configuration through `board::initialize()`:
 full-duplex, 8-bit, MSB-first, Mode 3 at 2.5 MHz (80 MHz peripheral clock
 divided by 32), with PB3/PB4/PB5 for SCK/MISO/MOSI. PA4 is the active-low
-GPIO chip-select output. One CS assertion covers all four bytes; the driver
+GPIO chip-select output. F446 uses the pins in the table above at 2.625 MHz
+(84 MHz peripheral clock divided by 32), also Mode 3. One CS assertion covers all four bytes; the driver
 waits for SPI to become idle before releasing CS on success. The ESP32 test
 additionally requests a minimum 5 us CS hold after the transfer through
 `SpiDevice`'s `chip_select_hold_us` constructor argument. The delay uses the

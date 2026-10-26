@@ -1,7 +1,7 @@
 #ifndef PLATFORM_INC_DIGITAL_OUTPUT_HPP
 #define PLATFORM_INC_DIGITAL_OUTPUT_HPP
 
-namespace platform {
+namespace bsp {
 
 /**
  * @brief Interface for controlling a digital output.
@@ -42,6 +42,6 @@ class DigitalOutput {
     virtual void write(bool active) noexcept = 0;
 }; // class DigitalOutput
 
-} // namespace platform
+} // namespace bsp
 
 #endif // PLATFORM_INC_DIGITAL_OUTPUT_H
